@@ -20,6 +20,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build components
+        run: |
+          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
       - name: Create Android project
         run: |
           mkdir -p app/src/main/java/com/example/apktest
@@ -33,6 +40,7 @@ jobs:
                   gradlePluginPortal()
               }
           }
+
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
               repositories {
@@ -40,6 +48,7 @@ jobs:
                   mavenCentral()
               }
           }
+
           rootProject.name = "APKTest"
           include(":app")
           EOF
@@ -85,13 +94,16 @@ jobs:
               <application
                   android:theme="@android:style/Theme.Material.Light.NoActionBar"
                   android:label="@string/app_name">
+
                   <activity
                       android:name="com.example.apktest.MainActivity"
                       android:exported="true">
+
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN"/>
                           <category android:name="android.intent.category.LAUNCHER"/>
                       </intent-filter>
+
                   </activity>
               </application>
           </manifest>
@@ -110,6 +122,7 @@ jobs:
           import android.widget.Toast;
 
           public class MainActivity extends Activity {
+
               @Override
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
@@ -128,22 +141,22 @@ jobs:
 
                   Button button = new Button(this);
                   button.setText("اضغط هنا");
+
                   button.setOnClickListener(v ->
-                      Toast.makeText(this, "التطبيق شغال بنجاح!", Toast.LENGTH_SHORT).show()
+                      Toast.makeText(
+                          this,
+                          "التطبيق شغال بنجاح!",
+                          Toast.LENGTH_SHORT
+                      ).show()
                   );
 
                   layout.addView(title);
                   layout.addView(button);
+
                   setContentView(layout);
               }
           }
           EOF
-
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android build components
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Build APK
         run: |
@@ -151,9 +164,16 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug
 
+      - name: Verify APK
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          ls -lh "$APK"
+
       - name: Save APK
         uses: actions/upload-artifact@v4
         with:
           name: My-First-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 7
